@@ -43,6 +43,14 @@ def createTables():
 def insertData():
     #Function to insert data
     global connection, cursor
+
+    #Insert user data into below insert statement in the form            ('uid','name','password','City',date), \
+    insertUsers = "INSERT INTO users VALUES \
+         ('u100', 'Mark Smith', 'password', 'Calgary', 2020-10-27);"
+
+    cursor.execute(insertUsers)
+    connection.commit()
+
     return
 
 def login():
@@ -50,7 +58,44 @@ def login():
     #Verifies if a user is an existing user
     #or adds data to users table if user is a new user
     #Returns the uid of the logged in user
-    return
+    global connection, cursor
+
+    print("Login System")
+    print("Type returning for returning user or new to create a new account")
+    loginType = input()
+    while True:
+        if loginType.lower() == 'returning' or loginType.lower() == 'new':
+            break
+        else:
+            print("Type returning for returning user or new to create a new account")
+            loginType = input()
+
+    if loginType.lower() == 'returning':
+        found = False
+        uid = None
+        password = None
+        while found != True:
+            print("Enter user id: ")
+            uid = input()
+            cursor.execute("SELECT uid FROM users")
+            userIds = cursor.fetchall()
+            for tup in userIds:
+                for u in tup:
+                    if uid.lower() == u:
+                        found = True
+            if found != True:
+                print("ID not found")
+        
+        found = False
+        while found != True:
+            print("Enter password: ")
+            password = input()
+            cursor.execute("SELECT pwd FROM users WHERE uid = ?",(uid,))
+            userPwd = cursor.fetchall()
+            if password == userPwd[0][0]:
+                found = True
+    
+    return uid
 
 def main():
     global connection, cursor
@@ -59,9 +104,9 @@ def main():
     setConnection(filePath)
     createTables()
     insertData()
-    login()
-    #Placeholder user, once login function is created uid of logged in user will be stored here
-    currentUser = None
+    #currentUser is user that logged in for all questions that need it
+    #Login only supports existing users currently
+    currentUser = login()
 
 
 if __name__ == "__main__":
