@@ -5,5 +5,5 @@ Group for CMPUT 291.
 Members:
 
 (1) Aidan Kucharsaki
-(2) Nemwi M'Pfunya
+(2) Sezvo-ndinemwi M'pfunya
 (3) Nikita Adekar
