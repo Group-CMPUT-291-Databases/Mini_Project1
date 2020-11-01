@@ -123,15 +123,18 @@ def login():
             exist = 0
             print("Enter new user id: ")
             uid = input()
-            cursor.execute("SELECT uid FROM users")
-            userIds = cursor.fetchall()
-            for tup in userIds:
-                if uid.lower() == tup[0].lower():
-                    exist += 1
-            if exist > 0:
-                print("ID already in use",'\n')
+            if len(uid) != 4:
+                print("Invalid user id",'\n')
             else:
-                found = False
+                cursor.execute("SELECT uid FROM users")
+                userIds = cursor.fetchall()
+                for tup in userIds:
+                    if uid.lower() == tup[0].lower():
+                        exist += 1
+                if exist > 0:
+                    print("ID already in use",'\n')
+                else:
+                    found = False
 
         print("Enter name associated with the account: ")
         name = input()
@@ -155,10 +158,25 @@ def main():
     setConnection(filePath)
     createTables()
     insertData()
-    
+
     #currentUser is user that logged in for all questions that need it
     #currentUser is a string
     currentUser = login()
+
+    #Main loop for main menu
+    #I assume questions are assignment questions are called from here
+    mainLoop = True
+    while mainLoop != False:
+        print('\n')
+        print("MENU OPTIONS SHOULD GO HERE")
+        print("Type 'logout' to return to login menu")
+        print("Type 'quit' to exit program")
+        option = input()
+        if option.lower() == "logout":
+            print('\n')
+            currentUser = login()
+        elif option.lower() == 'quit':
+            mainLoop = False
 
 
 if __name__ == "__main__":
