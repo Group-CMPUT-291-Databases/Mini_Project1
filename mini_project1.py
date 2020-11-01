@@ -31,11 +31,11 @@ def createTables():
     cursor.execute("CREATE TABLE privileged (uid char(4), primary key (uid), foreign key (uid) references users);")
     cursor.execute("CREATE TABLE badges (bname text, type text, primary key (bname));")
     cursor.execute("CREATE TABLE ubadges (uid char(4), bdate date, bname text, primary key (uid,bdate), foreign key (uid) references users, foreign key (bname) references badges);")
-    cursor.execute("create table posts ( pid char(4), pdate date, title text, body text, poster char(4), primary key (pid), foreign key (poster) references users);")
-    cursor.execute("create table tags ( pid char(4), tag text, primary key (pid,tag), foreign key (pid) references posts);")
-    cursor.execute("create table votes ( pid char(4), vno int, vdate text, uid char(4), primary key (pid,vno), foreign key (pid) references posts, foreign key (uid) references users);")
-    cursor.execute("create table questions (pid char(4), theaid char(4), primary key (pid), foreign key (theaid) references answers);")
-    cursor.execute("create table answers (pid char(4), qid char(4), primary key (pid), foreign key (qid) references questions);")
+    cursor.execute("CREATE TABLE posts ( pid char(4), pdate date, title text, body text, poster char(4), primary key (pid), foreign key (poster) references users);")
+    cursor.execute("CREATE TABLE tags ( pid char(4), tag text, primary key (pid,tag), foreign key (pid) references posts);")
+    cursor.execute("CREATE TABLE votes ( pid char(4), vno int, vdate text, uid char(4), primary key (pid,vno), foreign key (pid) references posts, foreign key (uid) references users);")
+    cursor.execute("CREATE TABLE questions (pid char(4), theaid char(4), primary key (pid), foreign key (theaid) references answers);")
+    cursor.execute("CREATE TABLE answers (pid char(4), qid char(4), primary key (pid), foreign key (qid) references questions);")
 
     connection.commit()
     return
@@ -46,9 +46,25 @@ def insertData():
 
     #Insert user data into below insert statement in the form            ('uid','name','password','City',date), \
     insertUsers = "INSERT INTO users VALUES \
-         ('u100', 'Mark Smith', 'password', 'Calgary', 2020-10-27);"
+         ('u100', 'Mark Smith', 'password', 'Calgary', '2020-10-27');"
+    insertPriviledged = ""
+    insertBadges = ""
+    insertUBadges = ""
+    insertPosts = ""
+    insertTags = ""
+    insertVotes = ""
+    insertQuestions = ""
+    insertAnswers = ""
 
     cursor.execute(insertUsers)
+    cursor.execute(insertPriviledged)
+    cursor.execute(insertBadges)
+    cursor.execute(insertUBadges)
+    cursor.execute(insertPosts)
+    cursor.execute(insertTags)
+    cursor.execute(insertVotes)
+    cursor.execute(insertQuestions)
+    cursor.execute(insertAnswers)
     connection.commit()
 
     return
@@ -94,7 +110,42 @@ def login():
             userPwd = cursor.fetchall()
             if password == userPwd[0][0]:
                 found = True
+            else:
+                print("Incorrect Password.")
     
+    if loginType.lower() == 'new':
+        found = True
+        uid = None
+        name = None
+        city = None
+        password = None
+        while found != False:
+            exist = 0
+            print("Enter new user id: ")
+            uid = input()
+            cursor.execute("SELECT uid FROM users")
+            userIds = cursor.fetchall()
+            for tup in userIds:
+                if uid.lower() == tup[0].lower():
+                    exist += 1
+            if exist > 0:
+                print("ID already in use",'\n')
+            else:
+                found = False
+
+        print("Enter name associated with the account: ")
+        name = input()
+        print("Enter city of residence: ")
+        city = input()
+
+        found = True
+        while found != False:
+            print("Enter password for account: ")
+            password = input()
+            if password != None:
+                found = False
+    
+        cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
     return uid
 
 def main():
@@ -104,8 +155,9 @@ def main():
     setConnection(filePath)
     createTables()
     insertData()
+    
     #currentUser is user that logged in for all questions that need it
-    #Login only supports existing users currently
+    #currentUser is a string
     currentUser = login()
 
 
