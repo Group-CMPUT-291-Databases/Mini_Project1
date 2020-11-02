@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, sys, getpass
 
 connection = None
 cursor = None
@@ -91,7 +91,7 @@ def login():
         uid = None
         password = None
         while found != True:
-            print("Enter user id: ")
+            print("Enter user id: ",end='')
             uid = input()
             cursor.execute("SELECT uid FROM users")
             userIds = cursor.fetchall()
@@ -104,8 +104,7 @@ def login():
         
         found = False
         while found != True:
-            print("Enter password: ")
-            password = input()
+            password = getpass.getpass("Enter password: ")
             cursor.execute("SELECT pwd FROM users WHERE uid = ?",(uid,))
             userPwd = cursor.fetchall()
             if password == userPwd[0][0]:
@@ -121,7 +120,7 @@ def login():
         password = None
         while found != False:
             exist = 0
-            print("Enter new user id: ")
+            print("Enter new user id: ",end='')
             uid = input()
             if len(uid) != 4:
                 print("Invalid user id",'\n')
@@ -136,13 +135,14 @@ def login():
                 else:
                     found = False
 
-        print("Enter name associated with the account: ")
+        print("Enter name associated with the account: ",end='')
         name = input()
-        print("Enter city of residence: ")
+        print("Enter city of residence: ",end='')
         city = input()
 
         found = True
         while found != False:
+            #Maybe use getpass here as well?
             print("Enter password for account: ")
             password = input()
             if password != None:
@@ -151,13 +151,23 @@ def login():
         cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
     return uid
 
-def main():
+def main(argv):
     global connection, cursor
 
-    filePath = "./mini_project1.db"
-    setConnection(filePath)
-    createTables()
-    insertData()
+    #Database input
+    #Takes a command line argument for a path to a database
+    #If no database is provided creates or clears, and inserts test data into mini_project.db
+    filePath = ''
+    if len(argv) > 1:
+        for i in range(1,len(argv)):
+            if i == 1:
+                filePath = argv[i]
+        setConnection(filePath)
+    else:
+        filePath = "./mini_project1.db"
+        setConnection(filePath)
+        createTables()
+        insertData()
 
     #currentUser is user that logged in for all questions that need it
     #currentUser is a string
@@ -180,4 +190,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
