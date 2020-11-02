@@ -180,7 +180,6 @@ def searchPosts():
             hold2 = "'"+keyword+"'"
             statement = "((LENGTH(p.title)+LENGTH(p.body)-LENGTH(REPLACE(lower(p.title),'" + keyword + "',''))-LENGTH(REPLACE(lower(p.body),'" + keyword + "','')))/LENGTH('"+keyword+"'))"
             statement = "SELECT p.*," + statement + " FROM posts p, tags t WHERE (p.pid = t.pid AND lower(t.tag) LIKE ?) OR (lower(p.title) LIKE ? OR lower(p.body) LIKE ?)"
-            print(statement)
             cursor.execute(statement,(hold,hold,hold,))
             kposts = cursor.fetchall()
             posts = posts + kposts
@@ -242,7 +241,8 @@ def main(argv):
             currentUser = login()
         elif option.lower() == "search":
             print('\n')
-             posts = searchPosts()
+            posts = searchPosts()
+            print(posts)
         elif option.lower() == 'quit':
             mainLoop = False
 
