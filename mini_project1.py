@@ -17,15 +17,15 @@ def createTables():
     global connection, cursor
 
     #Clears tables so that for each program run no multiple table errors occur
-    cursor.execute("DROP TABLE IF EXISTS users")
+    cursor.execute("DROP TABLE IF EXISTS votes")
+    cursor.execute("DROP TABLE IF EXISTS tags")
     cursor.execute("DROP TABLE IF EXISTS privileged")
-    cursor.execute("DROP TABLE IF EXISTS badges")
     cursor.execute("DROP TABLE IF EXISTS ubadges")
     cursor.execute("DROP TABLE IF EXISTS posts")
-    cursor.execute("DROP TABLE IF EXISTS tags")
-    cursor.execute("DROP TABLE IF EXISTS votes")
     cursor.execute("DROP TABLE IF EXISTS questions")
     cursor.execute("DROP TABLE IF EXISTS answers")
+    cursor.execute("DROP TABLE IF EXISTS badges")
+    cursor.execute("DROP TABLE IF EXISTS users")
 
     cursor.execute("CREATE TABLE users (uid char(4), name text, pwd text, city text, crdate date, primary key (uid));")
     cursor.execute("CREATE TABLE privileged (uid char(4), primary key (uid), foreign key (uid) references users);")
@@ -46,15 +46,24 @@ def insertData():
 
     #Insert user data into below insert statement in the form            ('uid','name','password','City',date), \
     insertUsers = "INSERT INTO users VALUES \
-         ('u100', 'Mark Smith', 'password', 'Calgary', '2020-10-27');"
+         ('u100', 'Mark Smith', 'password', 'Calgary', '2020-10-27'), \
+         ('u200', 'John Jones', 'abcde', 'Calgary', '2020-10-31');"
     insertPriviledged = ""
     insertBadges = ""
     insertUBadges = ""
-    insertPosts = ""
-    insertTags = ""
-    insertVotes = ""
-    insertQuestions = ""
-    insertAnswers = ""
+    insertPosts = "INSERT INTO posts VALUES \
+        ('p300','2020-11-01','This is a question','This will be for testing tags of a post','u200'), \
+        ('p200','2020-11-01','Relational Database question 2','This is a test for posts involving searching, so heres a house as a test','u200'), \
+        ('p100','2020-10-31','Relational Database question','This is a test for posts involving searching, so heres a house as a test','u100');"
+    insertTags = "INSERT INTO tags VALUES \
+        ('p300','database');"
+    insertVotes = "INSERT INTO votes VALUES \
+        ('p100',1,date('now'),'u200');"
+    insertQuestions = "INSERT INTO questions VALUES \
+        ('p200',NULL), \
+        ('p100',NULL);"
+    insertAnswers = "INSERT INTO answers VALUES \
+        ('p300','p100');"
 
     cursor.execute(insertUsers)
     cursor.execute(insertPriviledged)
@@ -105,7 +114,7 @@ def login():
         found = False
         while found != True:
             password = getpass.getpass("Enter password: ")
-            cursor.execute("SELECT pwd FROM users WHERE uid = ?",(uid,))
+            cursor.execute("SELECT pwd FROM users WHERE uid = ?;",(uid,))
             userPwd = cursor.fetchall()
             if password == userPwd[0][0]:
                 found = True
@@ -125,7 +134,7 @@ def login():
             if len(uid) != 4:
                 print("Invalid user id",'\n')
             else:
-                cursor.execute("SELECT uid FROM users")
+                cursor.execute("SELECT uid FROM users;")
                 userIds = cursor.fetchall()
                 for tup in userIds:
                     if uid.lower() == tup[0].lower():
@@ -150,7 +159,52 @@ def login():
     
         cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
     return uid
+def postQuestion():
+    global connection, cursor
+    return
+def searchPosts():
+    global connection, cursor
 
+    print("Enter keyword(s) to search for.")
+    print("Seperate different keywords with ', ' : ",end='')
+    keywords = input()
+    keywords = keywords.split(', ')
+
+    posts = []
+    for keyword in keywords:
+        if ',' in keyword:
+            continue
+        else:
+            keyword = keyword.lower()
+            hold = "%"+keyword+"%"
+            hold2 = "'"+keyword+"'"
+            statement = "((LENGTH(p.title)+LENGTH(p.body)-LENGTH(REPLACE(lower(p.title),'" + keyword + "',''))-LENGTH(REPLACE(lower(p.body),'" + keyword + "','')))/LENGTH('"+keyword+"'))"
+            statement = "SELECT p.*," + statement + " FROM posts p, tags t WHERE (p.pid = t.pid AND lower(t.tag) LIKE ?) OR (lower(p.title) LIKE ? OR lower(p.body) LIKE ?)"
+            print(statement)
+            cursor.execute(statement,(hold,hold,hold,))
+            kposts = cursor.fetchall()
+            posts = posts + kposts
+
+    for i in range(0,len(posts)):
+        cursor.execute("SELECT p.pid, COUNT(v.vno) FROM posts p, votes v WHERE v.pid = ? AND p.pid = ? GROUP BY p.pid",(posts[i][0],posts[i][0],))
+        vposts = cursor.fetchall()
+        if len(vposts) == 0:
+            posts[i] = list(posts[i])
+            posts[i].append(0)
+        else:
+            posts[i] = list(posts[i])
+            posts[i].append(vposts[0][1])
+
+        cursor.execute("SELECT q.pid FROM questions q WHERE q.pid = ?",(posts[i][0],))
+        if len(cursor.fetchall()) != 0:
+            cursor.execute("SELECT COUNT(a.pid) FROM answers a, questions q WHERE q.pid = ? AND a.qid = q.pid GROUP BY q.pid",(posts[i][0],))
+            acount = cursor.fetchall()
+            if len(acount) == 0:
+                posts[i].append(0)
+            else:
+                posts[i].append(acount[0][0])
+
+    return posts
 def main(argv):
     global connection, cursor
 
@@ -181,10 +235,14 @@ def main(argv):
         print("MENU OPTIONS SHOULD GO HERE")
         print("Type 'logout' to return to login menu")
         print("Type 'quit' to exit program")
+        print("Type 'search' to search for keywords")
         option = input()
         if option.lower() == "logout":
             print('\n')
             currentUser = login()
+        elif option.lower() == "search":
+            print('\n')
+             posts = searchPosts()
         elif option.lower() == 'quit':
             mainLoop = False
 
