@@ -2,6 +2,7 @@ import sqlite3, sys, getpass
 
 connection = None
 cursor = None
+currentPID = None
 
 def setConnection(path):
     #Sets up  db connection and creates cursor
@@ -21,9 +22,9 @@ def createTables():
     cursor.execute("DROP TABLE IF EXISTS tags")
     cursor.execute("DROP TABLE IF EXISTS privileged")
     cursor.execute("DROP TABLE IF EXISTS ubadges")
-    cursor.execute("DROP TABLE IF EXISTS posts")
     cursor.execute("DROP TABLE IF EXISTS questions")
     cursor.execute("DROP TABLE IF EXISTS answers")
+    cursor.execute("DROP TABLE IF EXISTS posts")
     cursor.execute("DROP TABLE IF EXISTS badges")
     cursor.execute("DROP TABLE IF EXISTS users")
 
@@ -179,7 +180,7 @@ def searchPosts():
             hold = "%"+keyword+"%"
             hold2 = "'"+keyword+"'"
             statement = "((LENGTH(p.title)+LENGTH(p.body)-LENGTH(REPLACE(lower(p.title),'" + keyword + "',''))-LENGTH(REPLACE(lower(p.body),'" + keyword + "','')))/LENGTH('"+keyword+"'))"
-            statement = "SELECT p.*," + statement + " FROM posts p, tags t WHERE (p.pid = t.pid AND lower(t.tag) LIKE ?) OR (lower(p.title) LIKE ? OR lower(p.body) LIKE ?)"
+            statement = "SELECT p.*,1 FROM posts p, tags t WHERE (p.pid = t.pid AND lower(t.tag) LIKE ?) OR (lower(p.title) LIKE ? OR lower(p.body) LIKE ?)"
             cursor.execute(statement,(hold,hold,hold,))
             kposts = cursor.fetchall()
             posts = posts + kposts
@@ -224,12 +225,21 @@ def searchPosts():
 def sortFunc(post):
     return post[5]
 
+def postQuestion(uid):
+    global cursor, connection, currentPID
+
+    print("Question Title: ",end='')
+    title = input()
+    print("Question Body: ",end='')
+    body = input()
+    return
 def main(argv):
-    global connection, cursor
+    global connection, cursor, currentPID
 
     #Database input
     #Takes a command line argument for a path to a database
-    #If no database is provided creates or clears, and inserts test data into mini_project.db
+    #If no database is provided creates or clears, and inserts test data into mini_project1.db
+    #Taking a database as input is preferable as the foreign keys and drop tables in the pre-set one causes problems
     filePath = ''
     if len(argv) > 1:
         for i in range(1,len(argv)):
@@ -246,16 +256,24 @@ def main(argv):
     #currentUser is a string
     currentUser = login()
 
+    #Sets the next pid to be used for question and answer posts
+    cursor.execute("SELECT p.pid FROM posts p")
+    pids = cursor.fetchall()
+    nextInt = int(pids[len(pids)-1][0][1:]) + 1
+    currentPID = 'p' + str(nextInt)
+
     #Main loop for main menu
     #I assume questions are assignment questions are called from here
     mainLoop = True
     posts = None
+    selectedPost = None
     while mainLoop != False:
         print('\n')
         print("MENU OPTIONS SHOULD GO HERE")
         print("Type 'logout' to return to login menu")
         print("Type 'quit' to exit program")
         print("Type 'search' to search for keywords")
+        print("Type 'question' to post a question")
 
         #Only displays these options once potential posts have been found
         if posts != None:
@@ -264,14 +282,55 @@ def main(argv):
 
         if option.lower() == "logout":
             print('\n')
+            posts = None
+            selectedPost = None
             currentUser = login()
+        elif option.lower() == "question":
+            print('\n')
+            postQuestion(currentUser)
         elif option.lower() == "search":
             print('\n')
             posts = searchPosts()
             if len(posts) > 5:
-                print(posts[0:5])
+                for i in range (0,5):
+                    print(i,'. ',posts[i])
+                print("Type the number of the correspoding post to select it for actions")
+                num = input()
+                select = False
+                while select != True:
+                    if num == "1":
+                        selectedPost = posts[0]
+                        select = True
+                    if num == "2":
+                        selectedPost = posts[1]
+                        select = True
+                    if num == "3":
+                        selectedPost = posts[2]
+                        select = True
+                    if num == "4":
+                        selectedPost = posts[3]
+                        select = True
+                    if num == "5":
+                        selectedPost = posts[4]
+                        select = True
+                    else:
+                        print("Not a valid selection")
+                        num = input()
             else:
-                print(posts)
+                for i in range(0,len(posts)):
+                    print(i,'. ',posts[i])
+                print("Type the number of the correspoding post to select it for actions")
+                num = input()
+                select = False
+                while select != True:
+                    for i in range(0,len(posts)):
+                        if num == str(i):
+                            selectedPost = posts[i]
+                            select = True
+                    if select != True:
+                        print("Not a valid selection")
+                        num = input()
+
         #Example elif for post related actions, only display once posts have been found
         elif posts != None and option.lower == "something":
             #Post related function calls here
