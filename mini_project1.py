@@ -202,8 +202,28 @@ def searchPosts():
                 posts[i].append(0)
             else:
                 posts[i].append(acount[0][0])
+        
+    removed = []
+    for i in range(0,len(posts)):
+        for j in range(0,len(posts)):
+            #print(posts[i][0]," ",posts[j][0])
+            if i != j and i not in removed:
+                if posts[i][0] == posts[j][0]:
+                    posts[i][5] += posts[j][5]
+                    removed.append(j)
+    
+    modifier = 0
+    removed.sort()
+    for index in removed:
+        posts.remove(posts[index-modifier])
+        modifier += 1
 
+    posts.sort(reverse=True,key=sortFunc)
     return posts
+
+def sortFunc(post):
+    return post[5]
+
 def main(argv):
     global connection, cursor
 
@@ -229,20 +249,33 @@ def main(argv):
     #Main loop for main menu
     #I assume questions are assignment questions are called from here
     mainLoop = True
+    posts = None
     while mainLoop != False:
         print('\n')
         print("MENU OPTIONS SHOULD GO HERE")
         print("Type 'logout' to return to login menu")
         print("Type 'quit' to exit program")
         print("Type 'search' to search for keywords")
+
+        #Only displays these options once potential posts have been found
+        if posts != None:
+            print("POST RELATED FUNCTIONS HERE")
         option = input()
+
         if option.lower() == "logout":
             print('\n')
             currentUser = login()
         elif option.lower() == "search":
             print('\n')
             posts = searchPosts()
-            print(posts)
+            if len(posts) > 5:
+                print(posts[0:5])
+            else:
+                print(posts)
+        #Example elif for post related actions, only display once posts have been found
+        elif posts != None and option.lower == "something":
+            #Post related function calls here
+            continue
         elif option.lower() == 'quit':
             mainLoop = False
 
