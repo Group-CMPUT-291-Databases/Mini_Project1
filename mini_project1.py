@@ -288,6 +288,9 @@ def main(argv):
         elif option.lower() == "question":
             print('\n')
             postQuestion(currentUser)
+
+        #Search fucntion, returns a list of posts and then gets user input for a post they want to perform actions on
+        #All posts are stored in posts, the user selected post is stored in selectedPost
         elif option.lower() == "search":
             print('\n')
             posts = searchPosts()
