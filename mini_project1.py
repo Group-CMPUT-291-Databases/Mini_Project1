@@ -611,8 +611,6 @@ def main(argv):
                 print("Type 'add a tag' to add a tag to this post")
                 print("Type 'edit title' to edit the post title")
                 print("Type 'edit body text' to edit the post body ")
-
-        print(currentPID)
         option = input()
 
         #Returns to login and resets posts/selectedPost
