@@ -361,17 +361,18 @@ def main(argv):
     #Takes a command line argument for a path to a database
     #If no database is provided creates or clears, and inserts test data into mini_project1.db
     #Taking a database as input is preferable as the foreign keys and drop tables in the pre-set one causes problems
-    filePath = ''
     if len(argv) > 1:
         for i in range(1,len(argv)):
             if i == 1:
+                databaseType = argv[i]
+            if i == 2:
                 filePath = argv[i]
-        setConnection(filePath)
-    else:
-        filePath = "./mini_project1.db"
+    if databaseType == '-i':
         setConnection(filePath)
         createTables()
         insertData()
+    elif databaseType == '-d':
+        setConnection(filePath)
 
     #currentUser is user that logged in for all questions that need it
     #currentUser is a string
