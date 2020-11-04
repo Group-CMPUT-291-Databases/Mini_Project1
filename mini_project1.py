@@ -1,4 +1,5 @@
-import sqlite3, sys, getpass
+import sqlite3, sys, getpass, time
+from datetime import date
 
 connection = None
 cursor = None
@@ -49,8 +50,9 @@ def insertData():
     insertUsers = "INSERT INTO users VALUES \
          ('u100', 'Mark Smith', 'password', 'Calgary', '2020-10-27'), \
          ('u200', 'John Jones', 'abcde', 'Calgary', '2020-10-31');"
-    insertPriviledged = ""
-    insertBadges = ""
+    insertPriviledged = "INSERT INTO privileged VALUES \
+        ('u100');"
+    insertBadges = "INSERT INTO badges VALUES ('testbadge','gold')"
     insertUBadges = ""
     insertPosts = "INSERT INTO posts VALUES \
         ('p300','2020-11-01','This is a question','This will be for testing tags of a post','u200'), \
@@ -200,8 +202,10 @@ def searchPosts():
             statement = "SELECT p.*,1 FROM posts p, tags t WHERE (p.pid = t.pid AND lower(t.tag) LIKE ?) OR (lower(p.title) LIKE ? OR lower(p.body) LIKE ?)"
             cursor.execute(statement,(hold,hold,hold,))
             kposts = cursor.fetchall()
+            print(kposts)
             posts = posts + kposts
-
+            print(posts)
+    print(keywords)
     #Checks over all found posts
     #For each found post finds and adds that posts votes count and appends it to that posts returned list (adds 0 if no votes exist)
     #For each found question post checks and adds number of answers the post has and appends it to that posts returned list (0 if no answers, no appending if post is an answer)
@@ -354,6 +358,185 @@ def postQuestion(uid):
 
     connection.commit()
 
+def post_action_answer(uid,pid):
+    global connection, cursor, currentPID
+
+    print("Answer Title: ",end='')
+    title = input()
+    print("Answer Body: ",end='')
+    body = input()
+    print(pid)
+    check_ifquestion = '''
+                        SELECT posts.pid, questions.pid
+                        FROM posts, questions
+                        WHERE posts.pid = questions.pid
+                        AND posts.pid = ?
+                    '''
+
+    insert_answers = '''
+                            INSERT INTO answers (pid, qid)
+                                VALUES (?, ?);
+                                    
+                            '''
+    insert_posts = '''
+                            INSERT INTO posts (pid, pdate, title, body, poster) VALUES
+                                    (?,?,?,?,? );
+                                    
+                            '''
+    cursor.execute(check_ifquestion,(pid,))
+    #if question pid and post pid are equal, questionbool is true
+    questionbool = cursor.fetchone()
+    print(questionbool)
+    #if questionbool is not true, insert answers and posts.
+    if questionbool:
+        post_date = date.today()
+        cursor.execute(insert_posts,(currentPID, post_date,title,body,uid))
+        cursor.execute(insert_answers, (currentPID, pid))
+        nextInt = int(currentPID[1:]) + 1
+        currentPID = 'p' + str(nextInt)
+
+    else:
+        return None
+   
+    connection.commit()
+    return True
+
+def post_action_vote(uid,pid):
+    global connection, cursor
+
+    check_ifvote = '''
+                        SELECT posts.pid, users.uid, votes.uid, votes.pid
+                        FROM posts, users, votes, votes
+                        WHERE posts.pid = votes.pid and users.uid = votes.uid
+                    '''
+
+    insert_votes = '''
+                            INSERT INTO votes (pid, vno, vdate, uid) VALUES
+                                    (?, ?, ?, ?);
+                                    
+                            '''
+	
+    select_vote_count = '''
+                            SELECT MAX(votes.vno) 
+                            FROM votes, posts
+                            WHERE votes.pid = posts.pid and posts.pid = ?
+                            GROUP BY posts.pid
+                            '''
+
+    cursor.execute(select_vote_count,(pid,))
+    max_vote = cursor.fetchone()
+    if not max_vote:
+        max_vote = 1
+        vote_date = date.today()
+        cursor.execute(insert_votes,(pid,max_vote,vote_date,uid))
+    else:
+        max_vote = max_vote[0] + 1
+        vote_date = date.today()
+        cursor.execute(insert_votes,(pid,max_vote,vote_date,uid))
+
+    return
+
+def post_action_mark_as_the_accepted(answer_id,user_id):
+    global connection, cursor, currentPID
+
+    check_ifanswer = '''
+                        SELECT answers.pid
+                        FROM answers 
+                        WHERE answers.pid = ?
+
+                    '''
+
+
+    check_ifquestion = '''
+                        SELECT questions.pid, questions.theaid
+                        FROM questions, answers
+                        WHERE questions.pid = answers.qid and answers.pid = ?
+
+                    '''
+
+
+    insert_theacceptedanswer = '''
+                                UPDATE questions SET theaid = ? WHERE pid = ?;  
+                            '''
+    update_theacceptedanswer = '''
+                                UPDATE questions
+                                SET theaid = ? WHERE pid = ?;
+                            '''
+    cursor.execute(check_ifanswer,(answer_id,))
+    answerbool = cursor.fetchone()
+    if not answerbool:
+        print("\nNot an answer")
+        return
+    
+    cursor.execute(check_ifquestion,(answer_id,))
+    questionbool = cursor.fetchone()
+    print(questionbool)
+
+    #update questions set theaid = 'p019' where pid = 'p018';
+    if questionbool[1] != None:
+   		print("The answer is already accepted. Do you want to change it?[Y/N]")
+   		input1 = input()
+   		if input1 == 'Y':
+   			cursor.execute(update_theacceptedanswer,(answer_id,questionbool[0]))
+   		elif input1 == 'N':
+   			return None
+   		else:
+   			print("Invalid input")
+    else: 
+        cursor.execute(insert_theacceptedanswer,(answer_id,questionbool[0]))
+   
+    connection.commit()
+    return
+
+def post_action_give_badge(user_id,post_id):
+    global connection, cursor
+
+    timegiven = date.today()
+
+    check_ubadges = '''
+                    SELECT u.uid, u.bdate
+                    FROM ubadges u
+                    WHERE u.uid = ? AND u.bdate = ?
+                    '''
+    check_badges = '''
+                        SELECT badges.bname
+                        FROM badges
+                    '''
+
+    give_badge = '''
+                            INSERT INTO ubadges (uid,bdate, bname) VALUES
+                                    (?, ?, ?);
+                                    
+                            '''
+    cursor.execute(check_ubadges,(user_id,timegiven))
+    ubadgesbool = cursor.fetchone()
+    if ubadgesbool:
+        print("Selected user has already received a badge today")
+        return
+
+    cursor.execute(check_badges)
+    badges = cursor.fetchall()
+
+    for i in range(0,len(badges)):
+        print(i,'. ',badges[i][0])
+    print("Type the number correspodning badge to select it")
+    num = input()
+    selectedBadge = None
+    select = False
+    while select != True:
+        for i in range(0,len(badges)):
+            if num == str(i):
+                selectedBadge = badges[i][0]
+                select = True
+        if select != True:
+            print("Not a valid selection")
+            num = input()
+
+    cursor.execute(give_badge,(user_id,timegiven,selectedBadge))
+   
+    connection.commit()
+    return
+
 def main(argv):
     global connection, cursor, currentPID
 
@@ -387,26 +570,29 @@ def main(argv):
     #Main loop for main menu
     #I assume questions are assignment questions are called from here
     mainLoop = True
-    posts = None
+    posts = []
     selectedPost = None
     user_type = False
     while mainLoop != False:
         print('\n')
-        print("MENU OPTIONS SHOULD GO HERE")
         print("Type 'logout' to return to login menu")
         print("Type 'quit' to exit program")
         print("Type 'search' to search for keywords")
         print("Type 'question' to post a question")
 
         #Only displays these options once potential posts have been found
-        if posts != None:
+        if len(posts) != 0:
             user_type = check_user_type(currentUser)
+            print("Type 'answer question' to post an answer to a search question")
+            print("Type 'vote' to upvote a post")
             if user_type == True:
+                print("Type 'add accepted' to select an answer as the accepted")
+                print("Type 'give badge' to give a badge to the posts poster")
                 print("Type 'add a tag' to add a tag to this post")
                 print("Type 'edit title' to edit the post title")
                 print("Type 'edit body text' to edit the post body ")
 
-        
+        print(currentPID)
         option = input()
 
         if option.lower() == "logout":
@@ -418,67 +604,85 @@ def main(argv):
             print('\n')
             postQuestion(currentUser)
         elif option.lower() == 'add a tag' and user_type == True:
-            searched_pid = selectedPost
+            searched_pid = selectedPost[0]
             add_tag(searched_pid) 
             
         elif option.lower() == 'edit title' and user_type == True: 
-            searched_pid = selectedPost            
+            searched_pid = selectedPost[0]            
             edit_post(option, searched_pid) 
             
         elif option.lower() == 'edit body text' and user_type == True: 
-            searched_pid = selectedPost            
+            searched_pid = selectedPost[0]            
             edit_post(option, searched_pid)
+
+        elif option.lower() == 'answer question':
+            searched_pid = selectedPost[0]
+            post_action_answer(currentUser,searched_pid)
+
+        elif option.lower() == 'vote':
+            searched_pid = selectedPost[0]
+            post_action_vote(currentUser,searched_pid)
+
+        elif option.lower() == 'add accepted' and user_type == True:
+            searched_pid = selectedPost[0]
+            post_action_mark_as_the_accepted(searched_pid,currentUser)
+
+        elif option.lower() == 'give badge' and user_type == True:
+            searched_pid = selectedPost[0]
+            selected_uid = selectedPost[4]
+            post_action_give_badge(selected_uid,searched_pid)
 
         #Search fucntion, returns a list of posts and then gets user input for a post they want to perform actions on
         #All posts are stored in posts, the user selected post is stored in selectedPost
         elif option.lower() == "search":
             print('\n')
             posts = searchPosts()
-            if len(posts) > 5:
-                for i in range (0,5):
-                    print(i,'. ',posts[i])
-                print("Type the number of the correspoding post to select it for actions, or type more to see more selections")
-                num = input()
-                select = False
-                cap = len(posts)
-                bot = 0
-                top = 5
+            if len(posts) != 0:
+                if len(posts) > 5:
+                    for i in range (0,5):
+                        print(i,'. ',posts[i])
+                    print("Type the number of the correspoding post to select it for actions, or type more to see more selections")
+                    num = input()
+                    select = False
+                    cap = len(posts)
+                    bot = 0
+                    top = 5
 
-                while select != True:
-                    if num.lower() == "more" and bot+5<cap:
-                        bot = bot + 5
-                        if top + 5 >= cap:
-                            top = cap
-                        else:
-                            top = top + 5
-                    for i in range (bot,top):
+                    while select != True:
+                        if num.lower() == "more" and bot+5<cap:
+                            bot = bot + 5
+                            if top + 5 >= cap:
+                                top = cap
+                            else:
+                                top = top + 5
+                            for i in range (bot,top):
+                                print(i,'. ',posts[i])
+                            print("Type the number of the correspoding post to select it for actions")
+                            num = input()
+                        for i in range(bot,top):
+                            if num == str(i):
+                                selectedPost = posts[i]
+                                select = True
+                        if select != True:
+                            print("Not a valid selection")
+                            num = input()
+                else:
+                    for i in range(0,len(posts)):
                         print(i,'. ',posts[i])
                     print("Type the number of the correspoding post to select it for actions")
                     num = input()
-                    for i in range(bot,top):
-                        if num == str(i):
-                            selectedPost = posts[i][0]
-                            select = True
-                    if select != True:
-                        print("Not a valid selection")
-                        num = input()
-            else:
-                for i in range(0,len(posts)):
-                    print(i,'. ',posts[i])
-                print("Type the number of the correspoding post to select it for actions")
-                num = input()
-                select = False
-                while select != True:
-                    for i in range(0,len(posts)):
-                        if num == str(i):
-                            selectedPost = posts[i][0]
-                            select = True
-                    if select != True:
-                        print("Not a valid selection")
-                        num = input()
+                    select = False
+                    while select != True:
+                        for i in range(0,len(posts)):
+                            if num == str(i):
+                                selectedPost = posts[i]
+                                select = True
+                        if select != True:
+                            print("Not a valid selection")
+                            num = input()
 
         #Example elif for post related actions, only display once posts have been found
-        elif posts != None and option.lower == "something":
+        elif len(posts) != 0 and option.lower == "something":
             #Post related function calls here
             continue
         elif option.lower() == 'quit':
