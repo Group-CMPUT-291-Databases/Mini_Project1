@@ -173,10 +173,6 @@ def login():
         cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
     return uid
 
-def postQuestion():
-    global connection, cursor
-    return
-
 def searchPosts():
     #Post Search Function
     #Given user input(s) returns a list of posts that include the searched keywords
