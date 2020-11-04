@@ -272,6 +272,8 @@ def add_tag(searched_pid):
             
         elif user_response.lower() == 'n':
             tag_loop = False
+	else:
+		print("Invalid input")
     
     
     #Displays the added tag      
