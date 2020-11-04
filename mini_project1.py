@@ -109,10 +109,12 @@ def login():
         uid = None
         password = None
         while found != True:
-            print("Enter user id: ",end='')
+            print("Enter user id or type q to quit: ",end='')
             uid = input()
             cursor.execute("SELECT uid FROM users")
             userIds = cursor.fetchall()
+            if uid.lower() == "q":
+                sys.exit()
             for tup in userIds:
                 for u in tup:
                     if uid.lower() == u:
@@ -122,10 +124,12 @@ def login():
         
         found = False
         while found != True:
-            password = getpass.getpass("Enter password: ")
+            password = getpass.getpass("Enter password or type q to quit: ")
             cursor.execute("SELECT pwd FROM users WHERE uid = ?;",(uid.lower(),))
             userPwd = cursor.fetchall()
-            if password == userPwd[0][0]:
+            if password.lower() == "q":
+                sys.exit()
+            elif password == userPwd[0][0]:
                 found = True
             else:
                 print("Incorrect Password.")
@@ -142,9 +146,11 @@ def login():
         password = None
         while found != False:
             exist = 0
-            print("Enter new user id: ",end='')
+            print("Enter new user id or type q to quit: ",end='')
             uid = input()
-            if len(uid) != 4:
+            if uid.lower() == 'q':
+                sys.exit()
+            elif len(uid) != 4:
                 print("Invalid user id",'\n')
             else:
                 cursor.execute("SELECT uid FROM users;")
@@ -165,9 +171,13 @@ def login():
         found = True
         while found != False:
             #Maybe use getpass here as well?
-            print("Enter password for account: ")
+            print("Enter password for account or type q to quit: ")
             password = input()
-            if password != None:
+            if password.lower() == 'q':
+                sys.exit()
+            elif len(password) < 3:
+                print("password not long enough")
+            elif password != None:
                 found = False
     
         cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
