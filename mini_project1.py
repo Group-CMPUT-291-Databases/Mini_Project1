@@ -86,6 +86,7 @@ def login():
     #Returns the uid of the logged in user
     global connection, cursor
 
+    #Checks if user is new or returning
     print("Login System")
     print("Type returning for returning user or new to create a new account")
     loginType = input()
@@ -96,6 +97,10 @@ def login():
             print("Type returning for returning user or new to create a new account")
             loginType = input()
 
+    #Returning user login
+    #Verifies inputted user id is already in system
+    #Then verifies password matches that of password stored in the system
+    #Password is hidden by built in python library getpass
     if loginType.lower() == 'returning':
         found = False
         uid = None
@@ -122,6 +127,10 @@ def login():
             else:
                 print("Incorrect Password.")
     
+    #New user login
+    #Gets the users id, name, city, password and creates a new table entry with those values and the current date
+    #Verifies the user id is proper len to be entered
+    #Verifies the user id isnt already in use
     if loginType.lower() == 'new':
         found = True
         uid = None
@@ -164,13 +173,20 @@ def postQuestion():
     global connection, cursor
     return
 def searchPosts():
+    #Post Search Function
+    #Given user input(s) returns a list of posts that include the searched keywords
     global connection, cursor
 
+    #Gets the keyword(s) from user input, seperates them into a list so they can be check seperately
     print("Enter keyword(s) to search for.")
     print("Seperate different keywords with ', ' : ",end='')
     keywords = input()
     keywords = keywords.split(', ')
 
+    #For each entered keyword obtains all posts that include that word in the title,body or tag
+    #Also returns 1 to indicate the post includes a keyword
+    #Adds found posts to a list
+    #Repeats for all keywords
     posts = []
     for keyword in keywords:
         if ',' in keyword:
@@ -179,12 +195,14 @@ def searchPosts():
             keyword = keyword.lower()
             hold = "%"+keyword+"%"
             hold2 = "'"+keyword+"'"
-            statement = "((LENGTH(p.title)+LENGTH(p.body)-LENGTH(REPLACE(lower(p.title),'" + keyword + "',''))-LENGTH(REPLACE(lower(p.body),'" + keyword + "','')))/LENGTH('"+keyword+"'))"
             statement = "SELECT p.*,1 FROM posts p, tags t WHERE (p.pid = t.pid AND lower(t.tag) LIKE ?) OR (lower(p.title) LIKE ? OR lower(p.body) LIKE ?)"
             cursor.execute(statement,(hold,hold,hold,))
             kposts = cursor.fetchall()
             posts = posts + kposts
 
+    #Checks over all found posts
+    #For each found post finds and adds that posts votes count and appends it to that posts returned list (adds 0 if no votes exist)
+    #For each found question post checks and adds number of answers the post has and appends it to that posts returned list (0 if no answers, no appending if post is an answer)
     for i in range(0,len(posts)):
         cursor.execute("SELECT p.pid, COUNT(v.vno) FROM posts p, votes v WHERE v.pid = ? AND p.pid = ? GROUP BY p.pid",(posts[i][0],posts[i][0],))
         vposts = cursor.fetchall()
@@ -203,7 +221,10 @@ def searchPosts():
                 posts[i].append(0)
             else:
                 posts[i].append(acount[0][0])
-        
+    
+    #Finds duplicate posts via pid from post list
+    #Each time a duplicate is found increases the number of keyword occurance on first occurance of that post
+    #Adds index of duplicate post to be removed later
     removed = []
     for i in range(0,len(posts)):
         for j in range(0,len(posts)):
@@ -213,12 +234,15 @@ def searchPosts():
                     posts[i][5] += posts[j][5]
                     removed.append(j)
     
+    #Removes posts based off of indexs in removed list
+    #To handle changing size of posts list removed is sorted and stored indexes are decreased by 1 everytime a post is removed
     modifier = 0
     removed.sort()
     for index in removed:
         posts.remove(posts[index-modifier])
         modifier += 1
 
+    #Sorts posts based off of the number of matching keywords and returns the sorted list of posts
     posts.sort(reverse=True,key=sortFunc)
     return posts
 
