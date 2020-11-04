@@ -251,6 +251,93 @@ def searchPosts():
 def sortFunc(post):
     return post[5]
 
+def add_tag(searched_pid):
+    #Function to add a tag to posts
+    #Passes the pid of the post returned from Search_Posts
+    global connection, cursor
+    tag_loop = True
+    
+    #Asks user to add a tag
+    while tag_loop != False:
+        print("Please enter the tag name")
+        tag_name = input()
+        cursor.execute("INSERT INTO tags VALUES (?,?)",(searched_pid,tag_name))
+        print("Your tag was added!")
+        print("Do you want to add another tag to this post? y/n")
+        user_response = input()
+        if user_response.lower() == 'y':
+            continue
+            
+        elif user_response.lower() == 'n':
+            tag_loop = False
+    
+    
+    #Displays the added tag      
+    cursor.execute("SELECT tag FROM tags WHERE pid = ?",(searched_pid,))
+    tag_added = cursor.fetchall()
+    print("Tags associated with the post:")
+    print(tag_added)
+    connection.commit()
+    
+    return tag_added   
+
+def edit_post(edit_type, searched_pid):
+    #Function to edit the post
+    #Passes what action is need i.e edit the title or edit the body text.Also passes the pid of the post to edit which is returned from Search_Posts
+    global connection, cursor
+   
+    #Checks what action is needed     
+    if edit_type.lower() == 'edit title':
+        cursor.execute("SELECT title FROM posts WHERE pid = ?",(searched_pid,))
+        prev_title = cursor.fetchone()
+        connection.commit()
+        print("The previous title is :")
+        print(prev_title)
+        print("\n Enter the new title :")
+        new_title = input()
+        cursor.execute("UPDATE posts SET title = ? WHERE pid = ?",(new_title,searched_pid,))
+        connection.commit()
+        
+        
+    elif edit_type.lower() == 'edit body text':
+        cursor.execute("SELECT body FROM posts WHERE pid = ?",(searched_pid,))
+        prev_body = cursor.fetchone()
+        connection.commit()
+        print("The previous body text is :")
+        print(prev_body)
+        print("Enter the new body text :")
+        new_body = input()
+        cursor.execute("UPDATE posts SET body = ? WHERE pid =?",(new_body,searched_pid,))
+        connection.commit()  
+        
+    #Displays the changes made to the post
+    cursor.execute("SELECT * FROM posts WHERE pid = ?",(searched_pid,))
+    edited_post = cursor.fetchall()
+    print("Edited post is")
+    print(edited_post)
+    connection.commit()    
+    
+    return
+
+def check_user_type(user_id):
+    #Function checks whether the user is privileged. Returns a Boolean
+    
+    global connection, cursor
+    is_priv_user = True
+    cursor.execute("SELECT * FROM privileged ")
+    priv_users = cursor.fetchall()
+   
+    for person in priv_users:
+        for value in person:
+            if user_id.lower() == value:
+                is_priv_user = True
+    
+            else:
+                is_priv_user = False
+    connection.commit()
+    print(is_priv_user)
+    return is_priv_user
+
 def postQuestion(uid):
     global cursor, connection, currentPID
 
@@ -266,6 +353,7 @@ def postQuestion(uid):
     currentPID = 'p' + str(nextInt)
 
     connection.commit()
+
 def main(argv):
     global connection, cursor, currentPID
 
@@ -310,7 +398,14 @@ def main(argv):
 
         #Only displays these options once potential posts have been found
         if posts != None:
-            print("POST RELATED FUNCTIONS HERE")
+            user_type = check_user_type(currentUser)
+            if user_type == True:
+                print("POST RELATED FUNCTIONS HERE")
+                print("Type 'add a tag' to add a tag to this post")
+                print("Type 'edit title' to edit the post title")
+                print("Type 'edit body text' to edit the post body ")
+
+        
         option = input()
 
         if option.lower() == "logout":
@@ -321,6 +416,17 @@ def main(argv):
         elif option.lower() == "question":
             print('\n')
             postQuestion(currentUser)
+        elif option.lower() == 'add a tag':
+            searched_pid = selectedPost
+            add_tag(searched_pid) 
+            
+        elif option.lower() == 'edit title': 
+            searched_pid = selectedPost            
+            edit_post(option, searched_pid) 
+            
+        elif option.lower() == 'edit body text': 
+            searched_pid = selectedPost            
+            edit_post(option, searched_pid)
 
         #Search fucntion, returns a list of posts and then gets user input for a post they want to perform actions on
         #All posts are stored in posts, the user selected post is stored in selectedPost
@@ -372,6 +478,7 @@ def main(argv):
             #Post related function calls here
             continue
         elif option.lower() == 'quit':
+            connection.commit()
             mainLoop = False
 
 
