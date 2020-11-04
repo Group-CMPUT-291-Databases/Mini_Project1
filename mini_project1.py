@@ -199,10 +199,8 @@ def searchPosts():
             statement = "SELECT p.*,1 FROM posts p, tags t WHERE (p.pid = t.pid AND lower(t.tag) LIKE ?) OR (lower(p.title) LIKE ? OR lower(p.body) LIKE ?)"
             cursor.execute(statement,(hold,hold,hold,))
             kposts = cursor.fetchall()
-            print(kposts)
             posts = posts + kposts
-            print(posts)
-    print(keywords)
+
     #Checks over all found posts
     #For each found post finds and adds that posts votes count and appends it to that posts returned list (adds 0 if no votes exist)
     #For each found question post checks and adds number of answers the post has and appends it to that posts returned list (0 if no answers, no appending if post is an answer)
