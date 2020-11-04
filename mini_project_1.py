@@ -150,7 +150,7 @@ def insert_data():
     global connection, cursor
 
     insert_users = '''
-                        INSERT INTO user(uid, name, pwd, city, crdate) VALUES
+                        INSERT INTO users(uid, name, pwd, city, crdate) VALUES
                             ('1', 'alex', 'dfg', 'mumbai', "8-5-2018"),
                             ('2', 'val', 'gef', 'london', "4-9-2016"),
                             ('3', 'cal', 'egf', 'edmonton', "6-10-2020");
@@ -158,23 +158,23 @@ def insert_data():
 
     insert_privileged =  '''
                         INSERT INTO privileged(uid) VALUES
-                                ('1509'),
-                                ('1409'),
-                                ('1609');
+                                ('1'),
+                                ('2'),
+                                ('3');
                        '''
 
     insert_posts =  '''
                         INSERT INTO posts(pid,pdate,title,body,poster) VALUES
-                                ('16', "8-5-2018",'hello','hello hello','goof'),
-                                ('1409', "7-5-2018",'bye','bye bye','bub'),
-                                ('1609', "5-6-2020",'how','how how', 'flor');
+                                ('16', "8-5-2018",'hello','hello hello','1'),
+                                ('1409', "7-5-2018",'bye','bye bye','2'),
+                                ('1609', "5-6-2020",'how','how how', '3');
                        '''
 
     insert_votes =  '''
                         INSERT INTO votes(pid,vno,vdate, uid) VALUES
-                                ('2', 1001,"7-12-2016",'5'),
-                                ('3', 1002,"14-7-2020",'3'),
-                                ('4', 1345,"13-5-2019",'6');
+                                ('16', 1001,"7-12-2016",'1'),
+                                ('1409', 1002,"14-7-2020",'2'),
+                                ('1609', 1345,"13-5-2019",'3');
                        '''
     insert_questions =  '''
                         INSERT INTO questions(pid, theaid) VALUES
@@ -184,9 +184,9 @@ def insert_data():
                        '''
     insert_answers =  '''
                         INSERT INTO answers(pid, qid) VALUES
-                                ('17', '123'),
-                                ('10', '456'),
-                                ('9', '12');
+                                ('16', '34'),
+                                ('87, '11'),
+                                ('12', '6');
                        '''
 
    
@@ -218,7 +218,7 @@ def post_action_answer(uid,pid,title,body):
                             '''
     insert_posts = '''
                             INSERT INTO posts (pid, pdate, title, body, poster) VALUES
-                                    (answer_id, post_date, title, body, uid );
+                                    (?,?,?,?,? );
                                     
                             '''
     cursor.execute(check_ifquestion)
@@ -227,10 +227,10 @@ def post_action_answer(uid,pid,title,body):
     
     #if questionbool is not true, insert answers and posts.
     if not questionbool:
-        cursor.execute(insert_answers, (answer_id, pid))
+        #cursor.execute(insert_answers, (answer_id, pid))
         post_date = date.today()
-        cursor.execute(insert_posts)
-        answer_id= int(answer_id) + 1
+        cursor.execute(insert_posts,(answer_id, post_date,title,body,uid))
+        answer_id= answer_id + 1
 
     else:
         return None
@@ -382,8 +382,10 @@ def main():
     connect(path)
     drop_tables()
     define_tables()
-    post_action_answer('13','16','test title','test body')
-
+    insert_data()
+    #post_action_answer('13','16','test title','test body')
+    cursor.execute(''' SELECT * FROM answers''')
+    print(cursor.fetchall())    
    
 
     
