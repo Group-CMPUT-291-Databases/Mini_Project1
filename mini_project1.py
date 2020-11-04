@@ -287,6 +287,7 @@ def edit_post(edit_type, searched_pid):
     global connection, cursor
    
     #Checks what action is needed     
+    print(type(searched_pid))
     if edit_type.lower() == 'edit title':
         cursor.execute("SELECT title FROM posts WHERE pid = ?",(searched_pid,))
         prev_title = cursor.fetchone()
@@ -335,7 +336,6 @@ def check_user_type(user_id):
             else:
                 is_priv_user = False
     connection.commit()
-    print(is_priv_user)
     return is_priv_user
 
 def postQuestion(uid):
@@ -388,6 +388,7 @@ def main(argv):
     mainLoop = True
     posts = None
     selectedPost = None
+    user_type = False
     while mainLoop != False:
         print('\n')
         print("MENU OPTIONS SHOULD GO HERE")
@@ -400,7 +401,6 @@ def main(argv):
         if posts != None:
             user_type = check_user_type(currentUser)
             if user_type == True:
-                print("POST RELATED FUNCTIONS HERE")
                 print("Type 'add a tag' to add a tag to this post")
                 print("Type 'edit title' to edit the post title")
                 print("Type 'edit body text' to edit the post body ")
@@ -416,15 +416,15 @@ def main(argv):
         elif option.lower() == "question":
             print('\n')
             postQuestion(currentUser)
-        elif option.lower() == 'add a tag':
+        elif option.lower() == 'add a tag' and user_type == True:
             searched_pid = selectedPost
             add_tag(searched_pid) 
             
-        elif option.lower() == 'edit title': 
+        elif option.lower() == 'edit title' and user_type == True: 
             searched_pid = selectedPost            
             edit_post(option, searched_pid) 
             
-        elif option.lower() == 'edit body text': 
+        elif option.lower() == 'edit body text' and user_type == True: 
             searched_pid = selectedPost            
             edit_post(option, searched_pid)
 
@@ -441,19 +441,19 @@ def main(argv):
                 select = False
                 while select != True:
                     if num == "1":
-                        selectedPost = posts[0]
+                        selectedPost = posts[0][0]
                         select = True
                     if num == "2":
-                        selectedPost = posts[1]
+                        selectedPost = posts[1][0]
                         select = True
                     if num == "3":
-                        selectedPost = posts[2]
+                        selectedPost = posts[2][0]
                         select = True
                     if num == "4":
-                        selectedPost = posts[3]
+                        selectedPost = posts[3][0]
                         select = True
                     if num == "5":
-                        selectedPost = posts[4]
+                        selectedPost = posts[4][0]
                         select = True
                     else:
                         print("Not a valid selection")
@@ -467,7 +467,7 @@ def main(argv):
                 while select != True:
                     for i in range(0,len(posts)):
                         if num == str(i):
-                            selectedPost = posts[i]
+                            selectedPost = posts[i][0]
                             select = True
                     if select != True:
                         print("Not a valid selection")
