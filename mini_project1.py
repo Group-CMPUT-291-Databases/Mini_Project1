@@ -19,6 +19,7 @@ def createTables():
     global connection, cursor
 
     #Clears tables so that for each program run no multiple table errors occur
+    #Foreign key erros do occur if a new db is made with the same name as an existing one since questions and answers rely on each other
     cursor.execute("DROP TABLE IF EXISTS votes")
     cursor.execute("DROP TABLE IF EXISTS tags")
     cursor.execute("DROP TABLE IF EXISTS privileged")
@@ -252,6 +253,7 @@ def searchPosts():
     posts.sort(reverse=True,key=sortFunc)
     return posts
 
+#Sort function for posts
 def sortFunc(post):
     return post[5]
 
@@ -343,14 +345,18 @@ def check_user_type(user_id):
     return is_priv_user
 
 def postQuestion(uid):
+    #Function to add a question
+    #Passes the uid of the poster
     global cursor, connection, currentPID
 
+    #Gets question title and body from user input
     print("Question Title: ",end='')
     title = input()
     print("Question Body: ",end='')
     body = input()
 
-    #cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
+    #Inserts question into posts and then into questions
+    #Updates global pid counter to a new pid
     cursor.execute("INSERT INTO posts VALUES (?,date('now'),?,?,?)",(currentPID,title,body,uid))
     cursor.execute("INSERT INTO questions VALUES (?,NULL)",(currentPID,))
     nextInt = int(currentPID[1:]) + 1
@@ -359,13 +365,17 @@ def postQuestion(uid):
     connection.commit()
 
 def post_action_answer(uid,pid):
+    #Function to post answer to a question
+    #Passes the uid of the poster and pid of the selected post
     global connection, cursor, currentPID
 
+    #Gets user input for answer title and body
     print("Answer Title: ",end='')
     title = input()
     print("Answer Body: ",end='')
     body = input()
-    print(pid)
+
+    #Sets up execute statements
     check_ifquestion = '''
                         SELECT posts.pid, questions.pid
                         FROM posts, questions
@@ -383,11 +393,12 @@ def post_action_answer(uid,pid):
                                     (?,?,?,?,? );
                                     
                             '''
+    
     cursor.execute(check_ifquestion,(pid,))
-    #if question pid and post pid are equal, questionbool is true
     questionbool = cursor.fetchone()
-    print(questionbool)
-    #if questionbool is not true, insert answers and posts.
+
+    #if questionbool is true the passed pid is a question, insert answer into answers and posts.
+    #Update global pid to a new pid
     if questionbool:
         post_date = date.today()
         cursor.execute(insert_posts,(currentPID, post_date,title,body,uid))
@@ -402,6 +413,8 @@ def post_action_answer(uid,pid):
     return True
 
 def post_action_vote(uid,pid):
+    #Function to add a vote to a post
+    #Passes uid of voter and pid of post
     global connection, cursor
 
     check_ifvote = '''
@@ -423,6 +436,9 @@ def post_action_vote(uid,pid):
                             GROUP BY posts.pid
                             '''
 
+    #Gets current vote number of selected post
+    #If no votes exist vote is set to 1
+    #Else vote is set to current vote number + 1
     cursor.execute(select_vote_count,(pid,))
     max_vote = cursor.fetchone()
     if not max_vote:
@@ -437,6 +453,8 @@ def post_action_vote(uid,pid):
     return
 
 def post_action_mark_as_the_accepted(answer_id,user_id):
+    #Function to accept an anser as accepted
+    #Passes pid of selected answer and user_id (may not be used?)
     global connection, cursor, currentPID
 
     check_ifanswer = '''
@@ -462,17 +480,21 @@ def post_action_mark_as_the_accepted(answer_id,user_id):
                                 UPDATE questions
                                 SET theaid = ? WHERE pid = ?;
                             '''
+
+    #Check if the selected post is an answer, returns if its not
     cursor.execute(check_ifanswer,(answer_id,))
     answerbool = cursor.fetchone()
     if not answerbool:
         print("\nNot an answer")
         return
     
+    #Gets the pid and current accepted answer pid of the passed answers question
     cursor.execute(check_ifquestion,(answer_id,))
     questionbool = cursor.fetchone()
     print(questionbool)
 
-    #update questions set theaid = 'p019' where pid = 'p018';
+    #If the question has an accepted anser ask the user if they want to update the accpeted answer or not
+    #Else set the questions theaid to passed answers pid
     if questionbool[1] != None:
    		print("The answer is already accepted. Do you want to change it?[Y/N]")
    		input1 = input()
@@ -489,8 +511,11 @@ def post_action_mark_as_the_accepted(answer_id,user_id):
     return
 
 def post_action_give_badge(user_id,post_id):
+    #Function to give a user a badge
+    #Passes the id of the badge receiving user and the pid of the selected post
     global connection, cursor
 
+    #Gets current time
     timegiven = date.today()
 
     check_ubadges = '''
@@ -508,6 +533,7 @@ def post_action_give_badge(user_id,post_id):
                                     (?, ?, ?);
                                     
                             '''
+    #Verifies primary key constraints, makes sure user hasnt recieved a badge today
     cursor.execute(check_ubadges,(user_id,timegiven))
     ubadgesbool = cursor.fetchone()
     if ubadgesbool:
@@ -517,6 +543,7 @@ def post_action_give_badge(user_id,post_id):
     cursor.execute(check_badges)
     badges = cursor.fetchall()
 
+    #Gets user input to select a possible badge to give
     for i in range(0,len(badges)):
         print(i,'. ',badges[i][0])
     print("Type the number correspodning badge to select it")
@@ -532,6 +559,7 @@ def post_action_give_badge(user_id,post_id):
             print("Not a valid selection")
             num = input()
 
+    #Gives selected badge to the user
     cursor.execute(give_badge,(user_id,timegiven,selectedBadge))
    
     connection.commit()
@@ -595,11 +623,13 @@ def main(argv):
         print(currentPID)
         option = input()
 
+        #Returns to login and resets posts/selectedPost
         if option.lower() == "logout":
             print('\n')
             posts = None
             selectedPost = None
             currentUser = login()
+            
         elif option.lower() == "question":
             print('\n')
             postQuestion(currentUser)
@@ -680,11 +710,6 @@ def main(argv):
                         if select != True:
                             print("Not a valid selection")
                             num = input()
-
-        #Example elif for post related actions, only display once posts have been found
-        elif len(posts) != 0 and option.lower == "something":
-            #Post related function calls here
-            continue
         elif option.lower() == 'quit':
             connection.commit()
             mainLoop = False
