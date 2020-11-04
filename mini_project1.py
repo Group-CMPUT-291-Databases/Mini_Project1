@@ -443,14 +443,18 @@ def main(argv):
                 cap = len(posts)
                 bot = 0
                 top = 5
-                if num == "more" and bot+5<cap:
-                    bot = bot + 5
-                    if top + 5 >= cap:
-                        top = cap
-                    else:
-                        top = top + 5
 
                 while select != True:
+                    if num.lower() == "more" and bot+5<cap:
+                        bot = bot + 5
+                        if top + 5 >= cap:
+                            top = cap
+                        else:
+                            top = top + 5
+                    for i in range (bot,top):
+                        print(i,'. ',posts[i])
+                    print("Type the number of the correspoding post to select it for actions")
+                    num = input()
                     for i in range(bot,top):
                         if num == str(i):
                             selectedPost = posts[i][0]
