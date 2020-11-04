@@ -436,26 +436,25 @@ def main(argv):
             if len(posts) > 5:
                 for i in range (0,5):
                     print(i,'. ',posts[i])
-                print("Type the number of the correspoding post to select it for actions")
+                print("Type the number of the correspoding post to select it for actions, or type more to see more selections")
                 num = input()
                 select = False
-                while select != True:
-                    if num == "1":
-                        selectedPost = posts[0][0]
-                        select = True
-                    if num == "2":
-                        selectedPost = posts[1][0]
-                        select = True
-                    if num == "3":
-                        selectedPost = posts[2][0]
-                        select = True
-                    if num == "4":
-                        selectedPost = posts[3][0]
-                        select = True
-                    if num == "5":
-                        selectedPost = posts[4][0]
-                        select = True
+                cap = len(posts)
+                bot = 0
+                top = 5
+                if num == "more" and bot+5<cap:
+                    bot = bot + 5
+                    if top + 5 >= cap:
+                        top = cap
                     else:
+                        top = top + 5
+
+                while select != True:
+                    for i in range(bot,top):
+                        if num == str(i):
+                            selectedPost = posts[i][0]
+                            select = True
+                    if select != True:
                         print("Not a valid selection")
                         num = input()
             else:
