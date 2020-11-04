@@ -169,9 +169,11 @@ def login():
     
         cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
     return uid
+
 def postQuestion():
     global connection, cursor
     return
+
 def searchPosts():
     #Post Search Function
     #Given user input(s) returns a list of posts that include the searched keywords
@@ -256,7 +258,14 @@ def postQuestion(uid):
     title = input()
     print("Question Body: ",end='')
     body = input()
-    return
+
+    #cursor.execute("INSERT INTO users VALUES (?,?,?,?,date('now'))",(uid,name,password,city))
+    cursor.execute("INSERT INTO posts VALUES (?,date('now'),?,?,?)",(currentPID,title,body,uid))
+    cursor.execute("INSERT INTO questions VALUES (?,NULL)",(currentPID,))
+    nextInt = int(currentPID[1:]) + 1
+    currentPID = 'p' + str(nextInt)
+
+    connection.commit()
 def main(argv):
     global connection, cursor, currentPID
 
