@@ -123,7 +123,7 @@ def login():
         found = False
         while found != True:
             password = getpass.getpass("Enter password: ")
-            cursor.execute("SELECT pwd FROM users WHERE uid = ?;",(uid,))
+            cursor.execute("SELECT pwd FROM users WHERE uid = ?;",(uid.lower(),))
             userPwd = cursor.fetchall()
             if password == userPwd[0][0]:
                 found = True
